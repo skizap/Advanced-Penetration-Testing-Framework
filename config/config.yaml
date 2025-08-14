@@ -1,0 +1,114 @@
+# Penetration Testing Framework Configuration
+framework:
+  name: "AdvancedPenTestFramework"
+  version: "1.0.0"
+  author: "Security Research Lab"
+
+# Scanning Configuration
+scanning:
+  masscan:
+    rate: 10000  # packets per second
+    timeout: 30
+    retries: 3
+    ports: "1-65535"
+    exclude_ports: []
+
+  nmap:
+    timing: 4  # T4 aggressive timing
+    scripts:
+      - "default"
+      - "vuln"
+      - "safe"
+    max_parallel: 50
+    timeout: 300
+
+  cidr:
+    max_hosts: 65536  # Maximum hosts to scan
+    exclude_ranges:
+      - "127.0.0.0/8"
+      - "169.254.0.0/16"
+      - "224.0.0.0/4"
+
+# Database Configuration
+database:
+  type: "sqlite"  # sqlite, postgresql, mysql
+  sqlite:
+    path: "data/pentest.db"
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "pentest"
+    username: ""
+    password: ""
+
+# Intelligence Sources
+intelligence:
+  nvd:
+    api_key: ""  # Optional for higher rate limits
+    cache_ttl: 86400  # 24 hours
+
+  shodan:
+    api_key: ""
+
+  censys:
+    api_id: ""
+    api_secret: ""
+
+  rapid7:
+    api_key: ""
+
+# Exploitation Configuration
+exploitation:
+  max_concurrent: 10
+  timeout: 60
+  retry_attempts: 3
+
+  ssh:
+    wordlists:
+      users: "data/wordlists/users.txt"
+      passwords: "data/wordlists/passwords.txt"
+    max_attempts: 100
+
+  smb:
+    timeout: 30
+
+  web:
+    user_agent: "Mozilla/5.0 (compatible; SecurityScanner/1.0)"
+    timeout: 30
+
+# Persistence Configuration
+persistence:
+  cleanup_on_exit: true
+  stealth_mode: true
+
+  windows:
+    methods: ["scheduled_task", "registry", "service"]
+
+  linux:
+    methods: ["systemd", "cron", "init"]
+
+  android:
+    methods: ["adb", "root_exploit"]
+
+# Exfiltration Configuration
+exfiltration:
+  dns:
+    server: "8.8.8.8"
+    domain: "example.com"
+
+  https:
+    proxy: ""
+    tor_enabled: false
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/framework.log"
+  max_size: "100MB"
+  backup_count: 5
+
+# Threading Configuration
+threading:
+  max_workers: 50
+  scanner_threads: 10
+  exploit_threads: 5
