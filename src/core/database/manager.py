@@ -94,9 +94,22 @@ class DatabaseManager:
             )
             session.add(scan_session)
             session.flush()  # Get the ID
+            session.refresh(scan_session)  # Refresh to get all attributes
+
+            # Create a detached copy to return
+            result = ScanSession(
+                name=scan_session.name,
+                description=scan_session.description,
+                scan_type=scan_session.scan_type,
+                target_specification=scan_session.target_specification,
+                config_used=scan_session.config_used,
+                status=scan_session.status,
+                start_time=scan_session.start_time
+            )
+            result.id = scan_session.id
 
             logger.info(f"Created scan session: {scan_session.id} - {name}")
-            return scan_session
+            return result
 
     def update_scan_session(self, session_id: int, **kwargs) -> Optional[ScanSession]:
         """Update scan session"""
