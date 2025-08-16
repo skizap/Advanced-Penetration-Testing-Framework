@@ -54,7 +54,7 @@ brew update && brew upgrade
 #### Step 1: Clone Repository
 ```bash
 # Clone from GitHub
-git clone https://github.com/securitylab/advanced-pentest-framework.git
+git clone https://github.com/skizap/advanced-pentest-framework.git
 cd advanced-pentest-framework
 
 # Verify repository structure

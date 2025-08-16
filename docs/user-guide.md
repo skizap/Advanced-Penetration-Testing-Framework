@@ -28,7 +28,7 @@
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/securitylab/advanced-pentest-framework.git
+git clone https://github.com/skizap/advanced-pentest-framework.git
 cd advanced-pentest-framework
 ```
 
