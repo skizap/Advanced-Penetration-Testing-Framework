@@ -233,46 +233,91 @@ def demo_stealth_features():
 
 
 async def demo_cleanup():
-    """Demonstrate cleanup capabilities"""
-    console.print("\n[bold red]🧹 Cleanup & Artifact Removal Demo[/bold red]")
-    
+    """Demonstrate enhanced cleanup and anti-forensics capabilities"""
+    console.print("\n[bold red]🧹 Enhanced Cleanup & Anti-Forensics Demo[/bold red]")
+
     manager = PersistenceManager()
-    
+
     # Get active sessions (mock)
     sessions = manager.get_active_sessions()
-    
+
     if sessions:
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
-            task = progress.add_task("Performing cleanup operations...", total=None)
-            
+            task = progress.add_task("Performing enhanced cleanup operations...", total=None)
+
             # Simulate cleanup
             await asyncio.sleep(1)
             success = await manager.cleanup_all_sessions()
-            
+
             status = "✅ Completed" if success else "❌ Failed"
-            progress.update(task, description=f"{status} cleanup operations")
+            progress.update(task, description=f"{status} enhanced cleanup operations")
     else:
         console.print("[yellow]ℹ️ No active sessions to clean up[/yellow]")
-    
-    # Display cleanup features
-    cleanup_table = Table(title="Cleanup Capabilities")
+
+    # Display enhanced cleanup features
+    cleanup_table = Table(title="Enhanced Cleanup & Anti-Forensics Capabilities")
     cleanup_table.add_column("Platform", style="cyan")
-    cleanup_table.add_column("Cleanup Actions", style="green")
-    
+    cleanup_table.add_column("Standard Cleanup", style="green")
+    cleanup_table.add_column("Anti-Forensics", style="red")
+
     cleanup_table.add_row(
         "Windows",
-        "• Event log clearing\n• PowerShell history\n• Prefetch files\n• Registry cleanup"
+        "• Event log clearing\n• PowerShell history\n• Prefetch files\n• Registry cleanup\n• USN journal\n• Shadow copies\n• Recycle bin",
+        "• Timestomping\n• Memory artifacts\n• Browser cleanup\n• Network traces\n• Swap file clearing\n• Selective log editing"
     )
     cleanup_table.add_row(
         "Linux",
-        "• Bash history\n• System logs\n• Temporary files\n• Service removal"
+        "• Multiple shell histories\n• System logs\n• Systemd journal\n• Package manager logs\n• Kernel ring buffer\n• Mail logs",
+        "• File timestamp modification\n• Memory cleanup\n• Network artifact removal\n• Browser data clearing\n• Swap file overwriting"
     )
     cleanup_table.add_row(
         "Android",
-        "• ADB logs\n• App caches\n• Development settings\n• Temporary files"
+        "• ADB logs\n• App caches\n• Development settings\n• Temporary files",
+        "• File timestomping\n• Memory clearing\n• Network cleanup\n• Browser artifacts"
     )
-    
+
     console.print(cleanup_table)
+
+    # Display anti-forensics techniques
+    console.print("\n[bold yellow]🔒 Advanced Anti-Forensics Techniques[/bold yellow]")
+
+    techniques_table = Table(title="Anti-Forensics Techniques")
+    techniques_table.add_column("Technique", style="cyan")
+    techniques_table.add_column("Description", style="white")
+    techniques_table.add_column("Platforms", style="green")
+
+    techniques_table.add_row(
+        "Timestomping",
+        "Modify file creation, modification, and access times to avoid detection",
+        "Windows, Linux, Android"
+    )
+    techniques_table.add_row(
+        "Memory Cleanup",
+        "Clear sensitive data from RAM, clipboard, and environment variables",
+        "Windows, Linux"
+    )
+    techniques_table.add_row(
+        "Network Artifact Removal",
+        "Clear DNS cache, ARP tables, connection tracking, and network statistics",
+        "Windows, Linux"
+    )
+    techniques_table.add_row(
+        "Browser Data Clearing",
+        "Remove browser history, cache, cookies from Chrome, Firefox, Edge",
+        "Windows, Linux"
+    )
+    techniques_table.add_row(
+        "Swap File Clearing",
+        "Securely overwrite hibernation files and swap partitions",
+        "Windows, Linux"
+    )
+    techniques_table.add_row(
+        "Selective Log Editing",
+        "Remove specific log entries instead of clearing entire logs",
+        "Windows, Linux"
+    )
+
+    console.print(techniques_table)
 
 
 async def main():

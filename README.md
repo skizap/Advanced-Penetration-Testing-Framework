@@ -70,76 +70,92 @@ A comprehensive, autonomous penetration testing framework designed for security 
 
 ## 🛠️ Installation
 
-### 1. Clone Repository
+### Quick Installation
+
 ```bash
+# 1. Clone repository
 git clone https://github.com/securitylab/advanced-pentest-framework.git
 cd advanced-pentest-framework
-```
 
-### 2. Install Dependencies
-```bash
-# Install Python dependencies
+# 2. Create virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install Python dependencies
 pip install -r requirements.txt
 
-# Install system dependencies (Ubuntu/Debian)
-sudo apt update
-sudo apt install masscan nmap radare2
+# 4. Install system dependencies
+# Ubuntu/Debian:
+sudo apt update && sudo apt install masscan nmap
 
-# Install system dependencies (macOS)
-brew install masscan nmap radare2
-```
+# macOS:
+brew install masscan nmap
 
-### 3. Configure Framework
-```bash
-# Edit configuration file
-cp config/config.yaml config/config.yaml.local
-nano config/config.yaml.local
-```
-
-### 4. Setup Environment
-```bash
-# Create necessary directories
+# 5. Setup framework
 mkdir -p logs data/wordlists
-
-# Make main script executable
 chmod +x main.py
+
+# 6. Verify installation
+python main.py --help
+python demo_working.py
 ```
+
+### Detailed Installation
+
+For comprehensive installation instructions including troubleshooting, see:
+📖 **[Installation Guide](docs/installation.md)**
 
 ## 🎯 Usage
 
-### Basic Scanning
-```bash
-# Scan single IP
-python main.py 192.168.1.100
+### Quick Start
 
-# Scan CIDR block
+```bash
+# Basic network scan
 python main.py 192.168.1.0/24
 
-# Multiple targets
-python main.py 192.168.1.0/24 10.0.0.0/16
-```
-
-### Advanced Usage
-```bash
-# Full exploitation chain
-python main.py --mode full 192.168.1.0/24
-
-# Scanning only
+# Fast discovery scan
 python main.py --mode scan --scan-type fast 192.168.1.0/24
 
-# Verbose output
-python main.py -v 192.168.1.100
+# Verbose output for debugging
+python main.py --verbose 192.168.1.100
 
-# Custom configuration
-python main.py --config custom-config.yaml 192.168.1.0/24
+# Test framework components
+python demo_working.py
 ```
 
-### Mode Options
-- `scan`: Network discovery and service enumeration only
-- `intelligence`: Vulnerability research and correlation
-- `exploit`: Automated exploitation attempts
-- `persistence`: Establish persistence on compromised hosts
-- `full`: Complete exploitation chain (default)
+### Command Line Options
+
+```
+python main.py [OPTIONS] TARGETS...
+
+Required:
+  TARGETS                    Target IPs or CIDR blocks
+
+Options:
+  --mode {scan,intelligence,exploit,persistence,full}
+                            Operation mode (default: full)
+  --scan-type {fast,full,stealth}
+                            Scan type (default: full)
+  --config FILE             Configuration file path
+  --output FILE             Output file for results
+  --verbose, -v             Enable verbose logging
+  --help, -h                Show help message
+```
+
+### Operation Modes
+
+| Mode | Description |
+|------|-------------|
+| `scan` | Network discovery and service enumeration only |
+| `intelligence` | Vulnerability research and correlation |
+| `exploit` | Automated exploitation attempts |
+| `persistence` | Establish persistence on compromised hosts |
+| `full` | Complete exploitation chain (default) |
+
+### Comprehensive Usage Guide
+
+For detailed usage examples, configuration options, and advanced features:
+📖 **[User Guide](docs/user-guide.md)**
 
 ## 📁 Project Structure
 
@@ -165,51 +181,93 @@ advanced-pentest-framework/
 
 ## ⚙️ Configuration
 
-The framework uses YAML configuration files. Key settings include:
+The framework uses YAML configuration files for customization:
 
 ```yaml
-# Scanning configuration
+# Basic configuration example
 scanning:
   masscan:
     rate: 10000              # Packets per second
     timeout: 30              # Scan timeout
   nmap:
     timing: 4                # Timing template (0-5)
-    scripts: ["default", "vuln"]
 
-# Database configuration
 database:
-  type: "sqlite"             # sqlite, postgresql
+  type: "sqlite"             # Database type
   sqlite:
-    path: "data/pentest.db"
+    path: "data/pentest.db"  # Database file path
 
-# Threading configuration
 threading:
   max_workers: 50            # Maximum concurrent threads
-  scanner_threads: 10        # Scanner thread pool size
 ```
+
+### Configuration Files
+
+- `config/config.yaml` - Main configuration file
+- `config/config.yaml.local` - Local customizations (recommended)
+
+For complete configuration reference and examples:
+📖 **[Configuration Guide](docs/configuration.md)**
 
 ## 🧪 Testing
 
+### Framework Testing
+
 ```bash
+# Test core components
+python demo_working.py
+
 # Run unit tests
 python -m pytest tests/
 
-# Run with coverage
+# Test with coverage
 python -m pytest --cov=src tests/
 
-# Test specific module
-python -m pytest tests/test_scanner.py
+# Test CLI functionality
+python main.py --help
+python main.py --mode intelligence 127.0.0.1
 ```
 
-## 📊 Output
+### Verified Functionality
 
-The framework generates multiple output formats:
+✅ **CLI Interface**: Argument parsing, help system, error handling
+✅ **Configuration**: YAML loading, environment variables, validation
+✅ **Database**: SQLite operations, data models, session management
+✅ **Logging**: Multi-level logging, file output, verbose mode
+✅ **Core Components**: Framework initialization, module loading
 
-- **Console**: Real-time progress and results
-- **Logs**: Detailed execution logs in `logs/`
-- **Database**: Structured data storage
-- **Reports**: JSON/XML/HTML reports (optional)
+⚠️ **External Dependencies**: Requires `masscan` and `nmap` for full functionality
+
+## 📊 Output & Results
+
+### Output Formats
+
+- **Console**: Real-time progress with colored output and progress indicators
+- **Logs**: Detailed execution logs in `logs/framework.log`
+- **Database**: Structured data storage in SQLite/PostgreSQL
+- **Reports**: JSON/XML/HTML reports (configurable)
+
+### Example Output
+
+```
+🎯 Penetration Testing Framework Demo
+==================================================
+1. 🗄️ Database System
+   ✅ Database initialized (SQLite)
+
+2. 📋 Creating Penetration Test Session
+   ✅ Created scan session: 'Corporate Network Assessment'
+
+3. 🔍 Network Discovery Results
+   ✅ Discovered: 192.168.1.10 (web-server.corp.local) - Linux
+   ✅ Discovered: 192.168.1.20 (db-server.corp.local) - Linux
+
+4. 📊 Summary
+   📈 Hosts Discovered: 4
+   📈 Open Ports: 11
+   📈 Services Identified: 8
+   🚨 Vulnerabilities Found: 4 (1 critical)
+```
 
 ## 🔧 Development
 
@@ -230,18 +288,56 @@ The framework generates multiple output formats:
 
 ## 📚 Documentation
 
-- [API Documentation](docs/api.md)
-- [Module Development Guide](docs/development.md)
-- [Configuration Reference](docs/configuration.md)
-- [Troubleshooting Guide](docs/troubleshooting.md)
+### User Documentation
+- 📖 **[User Guide](docs/user-guide.md)** - Comprehensive usage instructions
+- 🛠️ **[Installation Guide](docs/installation.md)** - Detailed setup instructions
+- ⚙️ **[Configuration Reference](docs/configuration.md)** - Complete configuration options
+- 🔧 **[Troubleshooting Guide](docs/troubleshooting.md)** - Common issues and solutions
 
-## 🛡️ Security Considerations
+### Quick Reference
+- **CLI Help**: `python main.py --help`
+- **Demo Script**: `python demo_working.py`
+- **Configuration**: `config/config.yaml`
+- **Logs**: `logs/framework.log`
 
-- Always run in isolated environments
-- Use VPNs/proxies for operational security
-- Implement proper access controls
-- Regular security updates
-- Monitor for detection/blocking
+## � Troubleshooting
+
+### Common Issues
+
+**"Masscan is required but not available"**
+```bash
+# Install masscan
+sudo apt install masscan  # Ubuntu/Debian
+brew install masscan      # macOS
+```
+
+**Permission denied errors**
+```bash
+# Set capabilities (recommended)
+sudo setcap cap_net_raw+ep $(which masscan)
+
+# Or run with sudo
+sudo python main.py 192.168.1.0/24
+```
+
+**Module import errors**
+```bash
+# Verify virtual environment
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+For comprehensive troubleshooting:
+📖 **[Troubleshooting Guide](docs/troubleshooting.md)**
+
+## �🛡️ Security Considerations
+
+- **Authorization**: Ensure explicit written permission before scanning
+- **Isolation**: Always run in isolated/controlled environments
+- **Stealth**: Use VPNs/proxies for operational security
+- **Access Control**: Implement proper authentication and authorization
+- **Updates**: Keep framework and dependencies updated
+- **Monitoring**: Watch for detection and blocking mechanisms
 
 ## 📄 License
 
