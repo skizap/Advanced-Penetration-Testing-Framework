@@ -9,6 +9,11 @@ from .models import (
     ExfiltrationChannel, StealthConfig, CleanupConfig, PersistenceConfig,
     PlatformType, PersistenceMethod, BackdoorType, CommunicationProtocol
 )
+from .data_exfiltration import (
+    DataExfiltrationManager, ExfiltrationMethod, ChannelStatus, ExfiltrationConfig,
+    ExfiltrationResult, DNSOverTLSExfiltrator, HTTPSOnionExfiltrator,
+    SteganographicExfiltrator, EncryptedChannelExfiltrator
+)
 
 __all__ = [
     'PersistenceManager',
@@ -23,5 +28,14 @@ __all__ = [
     'PlatformType',
     'PersistenceMethod',
     'BackdoorType',
-    'CommunicationProtocol'
+    'CommunicationProtocol',
+    'DataExfiltrationManager',
+    'ExfiltrationMethod',
+    'ChannelStatus',
+    'ExfiltrationConfig',
+    'ExfiltrationResult',
+    'DNSOverTLSExfiltrator',
+    'HTTPSOnionExfiltrator',
+    'SteganographicExfiltrator',
+    'EncryptedChannelExfiltrator'
 ]

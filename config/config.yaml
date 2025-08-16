@@ -85,10 +85,10 @@ persistence:
     methods: ["scheduled_task", "registry", "service"]
 
   linux:
-    methods: ["systemd", "cron", "init"]
+    methods: ["systemd", "cron", "init", "bashrc", "kernel_module", "library_hijacking"]
 
   android:
-    methods: ["adb", "root_exploit"]
+    methods: ["adb", "root_exploit", "app_persistence"]
 
 # Exfiltration Configuration
 exfiltration:

@@ -28,6 +28,18 @@ class PersistenceMethod(Enum):
     WINDOWS_WMI = "windows_wmi"
     WINDOWS_STARTUP_FOLDER = "windows_startup_folder"
     WINDOWS_DLL_HIJACKING = "windows_dll_hijacking"
+
+    # Windows UAC bypass methods
+    WINDOWS_UAC_FODHELPER = "windows_uac_fodhelper"
+    WINDOWS_UAC_EVENTVWR = "windows_uac_eventvwr"
+    WINDOWS_UAC_COMPUTERDEFAULTS = "windows_uac_computerdefaults"
+    WINDOWS_UAC_SDCLT = "windows_uac_sdclt"
+
+    # Windows privilege escalation methods
+    WINDOWS_PRIVESC_TOKEN = "windows_privesc_token"
+    WINDOWS_PRIVESC_SERVICE = "windows_privesc_service"
+    WINDOWS_PRIVESC_UNQUOTED_PATH = "windows_privesc_unquoted_path"
+    WINDOWS_PRIVESC_REGISTRY = "windows_privesc_registry"
     
     # Linux methods
     LINUX_SYSTEMD = "linux_systemd"

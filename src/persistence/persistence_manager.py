@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Union
 from loguru import logger
 
-from core.config import config_manager
+from src.core.config import config_manager
 from .models import (
     CompromisedHost, PersistenceSession, PersistenceResult, BackdoorInfo,
     PlatformType, PersistenceMethod, PersistenceConfig, StealthConfig, CleanupConfig
@@ -88,15 +88,29 @@ class PersistenceManager:
                 'registry': PersistenceMethod.WINDOWS_REGISTRY,
                 'service': PersistenceMethod.WINDOWS_SERVICE,
                 'wmi': PersistenceMethod.WINDOWS_WMI,
+                'startup_folder': PersistenceMethod.WINDOWS_STARTUP_FOLDER,
+                'dll_hijacking': PersistenceMethod.WINDOWS_DLL_HIJACKING,
+                'uac_fodhelper': PersistenceMethod.WINDOWS_UAC_FODHELPER,
+                'uac_eventvwr': PersistenceMethod.WINDOWS_UAC_EVENTVWR,
+                'uac_computerdefaults': PersistenceMethod.WINDOWS_UAC_COMPUTERDEFAULTS,
+                'uac_sdclt': PersistenceMethod.WINDOWS_UAC_SDCLT,
+                'privesc_token': PersistenceMethod.WINDOWS_PRIVESC_TOKEN,
+                'privesc_service': PersistenceMethod.WINDOWS_PRIVESC_SERVICE,
+                'privesc_unquoted_path': PersistenceMethod.WINDOWS_PRIVESC_UNQUOTED_PATH,
+                'privesc_registry': PersistenceMethod.WINDOWS_PRIVESC_REGISTRY,
             },
             'linux': {
                 'systemd': PersistenceMethod.LINUX_SYSTEMD,
                 'cron': PersistenceMethod.LINUX_CRON,
                 'init': PersistenceMethod.LINUX_INIT,
+                'bashrc': PersistenceMethod.LINUX_BASHRC,
+                'kernel_module': PersistenceMethod.LINUX_KERNEL_MODULE,
+                'library_hijacking': PersistenceMethod.LINUX_LIBRARY_HIJACKING,
             },
             'android': {
                 'adb': PersistenceMethod.ANDROID_ADB,
                 'root_exploit': PersistenceMethod.ANDROID_ROOT_EXPLOIT,
+                'app_persistence': PersistenceMethod.ANDROID_APP_PERSISTENCE,
             }
         }
         

