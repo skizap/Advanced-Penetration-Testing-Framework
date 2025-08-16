@@ -13,47 +13,13 @@ A comprehensive, autonomous penetration testing framework designed for security 
 
 ## 🚀 Features
 
-### Phase 1: Network Discovery & Scanning ✅ COMPLETED
-- **CIDR Block Parsing**: Intelligent IP range handling with exclusion filters
-- **Masscan Integration**: High-speed port discovery (up to 10M packets/sec)
-- **Nmap Service Enumeration**: Detailed service detection and OS fingerprinting
-- **Parallel Processing**: Multi-threaded scanning for maximum efficiency
-
-### Phase 2: Vulnerability Intelligence ✅ COMPLETED
-- **NVD Integration**: Real-time CVE database queries with CVSS scoring
-  - ✅ NVD API client with rate limiting and caching
-  - ✅ CVE lookup by ID, keyword, and CPE matching
-  - ✅ CVSS v2/v3 score parsing and normalization
-- **Threat Intelligence**: Rapid7 and RiskIQ data correlation
-  - ✅ Multi-source threat intelligence aggregation
-  - ✅ Shodan, VirusTotal, and Rapid7 API integration
-  - ✅ Reputation scoring and threat actor attribution
-- **Vulnerability Prioritization**: Custom risk scoring algorithms
-  - ✅ CVSS-based scoring with temporal and environmental factors
-  - ✅ Asset criticality assessment and exposure analysis
-  - ✅ Business impact evaluation and remediation complexity
-- **Exploit Matching**: Automatic exploit-to-service correlation
-  - ✅ ExploitDB integration with CSV parsing
-  - ✅ GitHub exploit repository search
-  - ✅ Exploit reliability scoring and availability assessment
-
-### Phase 3: Exploit Development
-- **ROP Chain Generation**: Automated with pwntools integration
-- **Process Hollowing**: Cross-platform payload injection
-- **Binary Analysis**: Radare2 and angr integration for vulnerability discovery
-- **Shellcode Generation**: Multi-architecture with anti-detection features
-
-### Phase 4: Multi-Protocol Exploitation
-- **SSH Exploitation**: Brute force, key attacks, and tunneling
-- **Shellshock Exploitation**: CVE-2014-6271 targeting
-- **DNS Tunneling**: Command & control and data exfiltration
-- **SMB Exploitation**: EternalBlue and lateral movement
-
-### Phase 5: Persistence & Exfiltration
-- **Windows Persistence**: Scheduled tasks, registry, services, WMI
-- **Linux Persistence**: Systemd, cron, init scripts, kernel modules
-- **Android Control**: ADB injection and root exploitation
-- **Stealth Exfiltration**: DNS-over-TLS, HTTPS onion routing
+- **Network Discovery**: Intelligent IP range scanning with CIDR block parsing
+- **High-Speed Port Scanning**: Masscan integration for rapid port discovery
+- **Service Enumeration**: Detailed service detection and OS fingerprinting with Nmap
+- **Vulnerability Intelligence**: Real-time CVE database queries and threat correlation
+- **Exploit Matching**: Automatic exploit-to-service correlation and prioritization
+- **Multi-threaded Processing**: Parallel scanning for maximum efficiency
+- **Comprehensive Reporting**: Multiple output formats with detailed analysis
 
 ## 📋 Requirements
 
@@ -74,7 +40,7 @@ A comprehensive, autonomous penetration testing framework designed for security 
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/securitylab/advanced-pentest-framework.git
+git clone https://github.com/skizap/advanced-pentest-framework.git
 cd advanced-pentest-framework
 
 # 2. Create virtual environment (recommended)
@@ -97,7 +63,6 @@ chmod +x main.py
 
 # 6. Verify installation
 python main.py --help
-python demo_working.py
 ```
 
 ### Detailed Installation
@@ -118,9 +83,6 @@ python main.py --mode scan --scan-type fast 192.168.1.0/24
 
 # Verbose output for debugging
 python main.py --verbose 192.168.1.100
-
-# Test framework components
-python demo_working.py
 ```
 
 ### Command Line Options
@@ -214,9 +176,6 @@ For complete configuration reference and examples:
 ### Framework Testing
 
 ```bash
-# Test core components
-python demo_working.py
-
 # Run unit tests
 python -m pytest tests/
 
@@ -227,14 +186,6 @@ python -m pytest --cov=src tests/
 python main.py --help
 python main.py --mode intelligence 127.0.0.1
 ```
-
-### Verified Functionality
-
-✅ **CLI Interface**: Argument parsing, help system, error handling
-✅ **Configuration**: YAML loading, environment variables, validation
-✅ **Database**: SQLite operations, data models, session management
-✅ **Logging**: Multi-level logging, file output, verbose mode
-✅ **Core Components**: Framework initialization, module loading
 
 ⚠️ **External Dependencies**: Requires `masscan` and `nmap` for full functionality
 
@@ -296,11 +247,10 @@ python main.py --mode intelligence 127.0.0.1
 
 ### Quick Reference
 - **CLI Help**: `python main.py --help`
-- **Demo Script**: `python demo_working.py`
 - **Configuration**: `config/config.yaml`
 - **Logs**: `logs/framework.log`
 
-## � Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -330,7 +280,7 @@ pip install -r requirements.txt
 For comprehensive troubleshooting:
 📖 **[Troubleshooting Guide](docs/troubleshooting.md)**
 
-## �🛡️ Security Considerations
+## 🛡️ Security Considerations
 
 - **Authorization**: Ensure explicit written permission before scanning
 - **Isolation**: Always run in isolated/controlled environments
