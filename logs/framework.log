@@ -3,3 +3,11 @@
 2025-08-16 15:21:23 | INFO     | __main__:main:196 | Intelligence mode - implement result loading
 2025-08-16 15:21:35 | INFO     | utils.logger:setup_logging:48 | Logging system initialized
 2025-08-16 15:21:35 | INFO     | __main__:main:196 | Intelligence mode - implement result loading
+2025-08-16 15:31:01 | INFO     | utils.logger:setup_logging:48 | Logging system initialized
+2025-08-16 15:31:07 | INFO     | utils.logger:setup_logging:48 | Logging system initialized
+2025-08-16 15:31:07 | INFO     | __main__:run_scan:31 | Starting fast scan on targets: ['127.0.0.1']
+2025-08-16 15:31:07 | INFO     | scanner.cidr_parser:__init__:52 | CIDR Parser initialized with max_hosts=65536
+2025-08-16 15:31:07 | ERROR    | scanner.masscan_scanner:_verify_masscan:64 | Masscan verification failed: [Errno 2] No such file or directory: 'masscan'
+2025-08-16 15:31:07 | ERROR    | __main__:main:207 | Framework error: Masscan is required but not available. Install with: sudo apt install masscan
+2025-08-16 15:31:17 | INFO     | utils.logger:setup_logging:48 | Logging system initialized
+2025-08-16 15:31:17 | INFO     | __main__:main:199 | Exploit mode - implement vulnerability loading
